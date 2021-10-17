@@ -189,7 +189,7 @@ function getPool(wharehouse, database) {
 
 
 function closePools() {
-    return Promise.all(pools.values().map(v => v.shutdownPool()));
+    return Promise.all(Object.values(pools).map(v => v.shutdownPool()));
 }
 
 module.exports = { getPool, closePools };

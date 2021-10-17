@@ -1,5 +1,6 @@
 const snowflake = require('./snowflake');
 const express = require('express')
+const process = require('process')
 const app = express()
 const port = 3000
 
@@ -42,3 +43,8 @@ process.on('exit', function () {
     console.log('About to exit, cleaning up connections');
     snowflake.closePools();
 });
+
+process.on('SIGINT', () => {
+  console.info("Interrupted")
+  process.exit(0)
+})
