@@ -1,0 +1,20 @@
+{
+  "name": "varos-snowflake-proxy",
+  "version": "1.0.0",
+  "description": "A node js snowflake proxy that enables async querying and connection pooling for performance capabilities around snowflake",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "snowflake",
+    "node"
+  ],
+  "author": "Lior Chen",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "generic-pool": "^3.8.2",
+    "snowflake-sdk": "^1.6.3"
+  }
+}
