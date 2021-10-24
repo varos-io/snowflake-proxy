@@ -6,6 +6,10 @@ const port = 3000
 
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.json({status: 'ok'})
+});
+
 app.post('/query', (req, res) => {
     const wharehouse = req.body.warehouse;
     const database = req.body.database;

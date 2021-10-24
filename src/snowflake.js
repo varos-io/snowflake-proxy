@@ -77,13 +77,15 @@ class SnowFlakePool {
     }
 
     statementMetadata = (sqlText, bindParams = []) => {
+        console.log('SQL QUERY:', sqlText, bindParams)
         return new Promise((resolve, reject) => {
             this.myPool.acquire().then(connection => {
                 const stmt = connection.execute({
                     sqlText,
-                    bindParams,
                     streamResult: true,
+                    binds: bindParams,
                     complete: (err, stmt, rows) => {
+                        //console.log('completed query', err)
                         err ? reject(new Error(err.message)) : (
                         resolve({
                             numRows: stmt.getNumRows(), // $ExpectType number
