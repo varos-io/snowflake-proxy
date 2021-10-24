@@ -117,6 +117,7 @@ class SnowFlakePool {
                         console.log(`Conn: ${connection.getId()} fetched ${rows && rows.length} rows`);
                         // Return result
                         if (err) {
+                            console.error(sqlText, bindParams, err)
                             reject(new Error(err.message))
                             return;
                         }
