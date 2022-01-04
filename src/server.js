@@ -20,7 +20,7 @@ app.post('/query', (req, res) => {
             data: rows
         });
     }).catch(x => {
-        res.status(200).json({err: 'snowflake error', detail: x.toString()});
+        res.status(500).json({err: 'snowflake error', detail: x.toString()});
     });
 });
 
@@ -34,7 +34,7 @@ app.post('/metadata', (req, res) => {
             data: rows
         });
     }).catch(x => {
-        res.status(200).json({err: 'snowflake error', detail: x.toString()});
+        res.status(500).json({err: 'snowflake error', detail: x.toString()});
     });
 });
 
