@@ -85,7 +85,7 @@ class SnowFlakePool {
                     streamResult: true,
                     binds: bindParams,
                     complete: (err, stmt, rows) => {
-                        //console.log('completed query', err)
+                        err && console.error('error in metadata!', err)
                         err ? reject(new Error(err.message)) : (
                         resolve({
                             numRows: stmt.getNumRows(), // $ExpectType number
@@ -118,37 +118,40 @@ class SnowFlakePool {
                     complete: (err, stmt, rows) => {
                         console.log(`Conn: ${connection.getId()} fetched ${rows && rows.length} rows`);
                         // Return result
-                        if (err) {
-                            console.error(sqlText, bindParams, err)
-                            reject(new Error(err.message))
-                            return;
-                        }
-                        // err ? reject(new Error(err.message)) : resolve(rows);
-    
-                        var stream = stmt.streamRows();
-                        
-                        stream.on('error', function(err1) {
-                            console.error('Unable to consume all rows');
-                            reject(new Error(err1.toString()));
-                        });
-                        const data = []
-                        stream.on('data', function(row) {
-                            const columns = stmt.getColumns();
-                            const rowData = new Array(columns.length);
-                            columns.map(c => {
-                                rowData[c.getIndex()] = row[c.getName()];
-                            })
-                            data.push(rowData);
-                            // consume result row...
-                        });
-                        
-                        stream.on('end', function() {
-                            console.log('All rows consumed');
-                            resolve(data);
-                        }); 
-    
+                        try{
+                            if (err) {
+                                console.error(sqlText, bindParams, err)
+                                reject(new Error(err.message))
+                                return;
+                            }
+                            // err ? reject(new Error(err.message)) : resolve(rows);
+        
+                            var stream = stmt.streamRows();
+                            
+                            stream.on('error', function(err1) {
+                                console.error('Unable to consume all rows');
+                                reject(new Error(err1.toString()));
+                            });
+                            const data = []
+                            stream.on('data', function(row) {
+                                const columns = stmt.getColumns();
+                                const rowData = new Array(columns.length);
+                                columns.map(c => {
+                                    rowData[c.getIndex()] = row[c.getName()];
+                                })
+                                data.push(rowData);
+                                // consume result row...
+                            });
+                            
+                            stream.on('end', function() {
+                                console.log('All rows consumed');
+                                resolve(data);
+                            });
+                        } 
+                        finally {
                         // Return connection back to pool
-                        this.myPool.release(connection);
+                            this.myPool.release(connection);
+                        }
                     }
                 });
             }).catch(err => reject(new Error(err.message)));
