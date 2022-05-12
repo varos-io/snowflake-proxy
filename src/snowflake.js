@@ -15,6 +15,7 @@ class PoolFactory {
                 account: process.env.SF_ACCOUNT,
                 username: process.env.SF_USER,
                 password: process.env.SF_PASSWORD,
+                schema: process.env.SF_SCHEMA,
                 warehouse: this.warehouse,//process.env.SF_WAREHOUSE,
                 database: this.database//process.env.SF_DATABASE
             });
