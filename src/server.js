@@ -15,13 +15,23 @@ app.post('/query', (req, res) => {
     const database = req.body.database;
     const query = req.body.query;
     const bindParams = req.body.bind_params;
-    snowflake.getPool(wharehouse, database).query(query, bindParams).then(rows => {
+
+    const runningQuery = snowflake.getPool(wharehouse, database).query(query, bindParams);
+    runningQuery.fetch().then(rows => {
         res.json({
             data: rows
         });
     }).catch(x => {
         res.status(500).json({err: 'snowflake error', detail: x.toString()});
     });
+
+    res.on("close", function() {
+        // request closed unexpectedly
+         if(!res.headersSent) {
+            runningQuery.cancel();
+         }
+    });
+
 });
 
 app.post('/metadata', (req, res) => {

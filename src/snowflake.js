@@ -62,6 +62,82 @@ const opts = {
 };
 
 
+class RunninQuery {
+
+    constructor(myPool, sqlText, bindParams) {
+        this.myPool = myPool;
+        this.sqlText = sqlText;
+        this.bindParams = bindParams
+        this._statement = null;
+        this._shouldCancel = false;
+        this._promise = new Promise((resolve, reject) => {
+            // Acquire connection from pool
+            // Execute the query
+            this.myPool.acquire().then(connection => {
+                connection.execute({
+                    sqlText,
+                    binds: bindParams,
+                    streamResult: true,
+                    complete: (err, stmt, rows) => {
+                        this._statement = stmt;
+                        console.log(`Conn: ${connection.getId()}`);
+                        // Return result
+                        if (err) {
+                            console.error(sqlText, bindParams, err)
+                            this.myPool.release(connection);
+                            reject(new Error(err.message))
+                            return;
+                        }
+                        // err ? reject(new Error(err.message)) : resolve(rows);
+                        if(this._shouldCancel) {
+                            stmt.cancel();
+                            this.myPool.release(connection);
+                            console.log('canceled query');
+                            reject('canceled');
+                            return;
+                        }
+                        var stream = stmt.streamRows();
+                        
+                        stream.on('error', (err1) => {
+                            console.error('Unable to consume all rows');
+                            this.myPool.release(connection);
+                            reject(new Error(err1.toString()));
+                        });
+                        const data = []
+                        stream.on('data', (row) => {
+                            const columns = stmt.getColumns();
+                            const rowData = new Array(columns.length);
+                            columns.map(c => {
+                                rowData[c.getIndex()] = row[c.getName()];
+                            })
+                            data.push(rowData);
+                            // consume result row...
+                        });
+                        
+                        stream.on('end', () => {
+                            console.log(`All rows consumed. count ${data.length}`);
+                            resolve(data);
+                            // Return connection back to pool
+                            this.myPool.release(connection);
+                        });
+                    }
+                });
+            }).catch(err => reject(new Error(err.message)));
+        });
+    }
+
+    cancel = () => {
+        this._shouldCancel = true;
+        if(this._statement) {
+            this._statement.cancel();
+        }
+    }
+
+    fetch = () => {
+        return this._promise;
+    }
+}
+
 class SnowFlakePool {
     constructor(warehouse, database) {
         this.myPool = genericPool.createPool(new PoolFactory(warehouse, database), opts);
@@ -109,54 +185,7 @@ class SnowFlakePool {
     }
 
     query = (sqlText, bindParams = []) => {
-        return new Promise((resolve, reject) => {
-            // Acquire connection from pool
-            this.myPool.acquire().then(connection => {
-                // Execute the query
-                connection.execute({
-                    sqlText,
-                    binds: bindParams,
-                    complete: (err, stmt, rows) => {
-                        console.log(`Conn: ${connection.getId()} fetched ${rows && rows.length} rows`);
-                        // Return result
-                        try{
-                            if (err) {
-                                console.error(sqlText, bindParams, err)
-                                reject(new Error(err.message))
-                                return;
-                            }
-                            // err ? reject(new Error(err.message)) : resolve(rows);
-        
-                            var stream = stmt.streamRows();
-                            
-                            stream.on('error', function(err1) {
-                                console.error('Unable to consume all rows');
-                                reject(new Error(err1.toString()));
-                            });
-                            const data = []
-                            stream.on('data', function(row) {
-                                const columns = stmt.getColumns();
-                                const rowData = new Array(columns.length);
-                                columns.map(c => {
-                                    rowData[c.getIndex()] = row[c.getName()];
-                                })
-                                data.push(rowData);
-                                // consume result row...
-                            });
-                            
-                            stream.on('end', function() {
-                                console.log('All rows consumed');
-                                resolve(data);
-                            });
-                        } 
-                        finally {
-                        // Return connection back to pool
-                            this.myPool.release(connection);
-                        }
-                    }
-                });
-            }).catch(err => reject(new Error(err.message)));
-        });
+        return new RunninQuery(this.myPool, sqlText, bindParams);
     }
 
     shutdownPool = () => {
