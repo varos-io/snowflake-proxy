@@ -4,7 +4,10 @@ const process = require('process')
 const app = express()
 const port = 3000
 
-app.use(express.json());
+app.use(express.json({
+    // default is 100kb
+    limit: "1000kb",
+}));
 
 app.get('/', (req, res) => {
   res.json({status: 'ok'})
