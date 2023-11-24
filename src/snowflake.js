@@ -116,7 +116,8 @@ class RunninQuery {
                         
                         stream.on('end', () => {
                             console.log(`All rows consumed. count ${data.length}`);
-                            resolve(data);
+                            // console.log(stmt.getStatementId());
+                            resolve({ queryId: stmt.getStatementId(), data});
                             // Return connection back to pool
                             this.myPool.release(connection);
                         });

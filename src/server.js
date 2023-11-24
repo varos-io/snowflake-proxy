@@ -20,10 +20,8 @@ app.post('/query', (req, res) => {
     const bindParams = req.body.bind_params;
 
     const runningQuery = snowflake.getPool(wharehouse, database).query(query, bindParams);
-    runningQuery.fetch().then(rows => {
-        res.json({
-            data: rows
-        });
+    runningQuery.fetch().then(resp => {
+        res.json(resp);
     }).catch(x => {
         res.status(500).json({err: 'snowflake error', detail: x.toString()});
     });
